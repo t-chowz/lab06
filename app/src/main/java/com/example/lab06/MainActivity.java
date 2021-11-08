@@ -18,7 +18,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 public class MainActivity extends AppCompatActivity {
-    private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
+    private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 12;
     //somewhere in Australia
     private final LatLng mDestinationLatLng = new LatLng(43.07587758480404, -89.40435829679654);
     private GoogleMap mMap;
@@ -30,31 +30,37 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.fragment_map);
-        //obtain a FusedLocationProviderClient
-        mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
         mapFragment.getMapAsync(googleMap -> {
             mMap = googleMap;
             //code to display marker
-            googleMap.addMarker(new MarkerOptions().position(mDestinationLatLng).title("Destination"));
+            googleMap.addMarker(new MarkerOptions().position(mDestinationLatLng).title("Bascom Hill"));
             displayMyLocation();
         });
-
+        //obtain a FusedLocationProviderClient
+        mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
     }
 
-    private void displayMyLocation(){
-        //check if permission granted
-        int permission = ActivityCompat.checkSelfPermission(this.getApplicationContext(), android.Manifest.permission.ACCESS_FINE_LOCATION);
-        //if not, ask for it
-        if(permission == PackageManager.PERMISSION_DENIED){
-            ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
-        }
-        //if permission granted, display marker at current location
-        else {
+    private void displayMyLocation() {
+        int permission = ActivityCompat.checkSelfPermission(this.getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION);
+        if (permission == PackageManager.PERMISSION_DENIED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
+        } else {
             mFusedLocationProviderClient.getLastLocation().addOnCompleteListener(this, task -> {
                 Location mLastKnownLocation = task.getResult();
-                    if (task.isSuccessful() && mLastKnownLocation != null){
-                        mMap.addPolyline(new PolylineOptions().add(new LatLng(mLastKnownLocation.getLatitude(), mLastKnownLocation.getLongitude()),mDestinationLatLng));
-                    }
+                if (task.isSuccessful() && mLastKnownLocation != null) {
+                    mMap.addPolyline(new PolylineOptions().add(
+                            new LatLng(mLastKnownLocation.getLatitude(), mLastKnownLocation.getLongitude()), mDestinationLatLng));
+
+                    SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.fragment_map);
+                    mapFragment.getMapAsync(googleMap -> {
+                        mMap = googleMap;
+                        LatLng mCurrentLatLng = new LatLng(mLastKnownLocation.getLatitude(), mLastKnownLocation.getLongitude());
+                        googleMap.addMarker(new MarkerOptions().position(mCurrentLatLng).title("Current Location"));
+                    });
+
+                }
             });
         }
     }
